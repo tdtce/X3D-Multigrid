@@ -148,7 +148,7 @@ def run(init_lr=INIT_LR, warmup_steps=8000, max_epochs=120, batch_size=BS*BS_UPS
             sample_duration=frames,
             gamma_tau=gamma_tau,
             crops=3)
-    val_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=12, pin_memory=True)
+    xval_dataloader = torch.utils.data.DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=12, pin_memory=True)
 
     dataloaders = {'train': dataloader, 'val': val_dataloader}
     datasets = {'train': dataset, 'val': val_dataset}
