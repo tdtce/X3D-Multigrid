@@ -45,7 +45,7 @@ def inference_net(clip, model, spatial_transforms, device):
 
 
 def run(video_fname, clip_size=30):
-    if torch.cud.is_available():
+    if torch.cuda.is_available():
         device = "cuda"
     else:
         device = "cpu"
