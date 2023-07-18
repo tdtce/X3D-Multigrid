@@ -81,13 +81,13 @@ def run(video_fname, clip_size=30, save_video_name=None):
         if len(video) % clip_size == 0:
             pred_cls, prob = inference_net(video, x3d, spatial_transforms, device)
             if save_video_name:
+                print("Save fragment to video")
                 for img in video:
                     img = np.array(img)
                     font = cv2.FONT_HERSHEY_SIMPLEX
                     text = f"{pred_cls} {prob * 100}%"
                     cv2.putText(img, text, (10, 10), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
                     out_vid.write(img)
-                    print("Save fragment to video")
             video = []
             results.append([idx, pred_cls, prob])
             idx += 1
@@ -101,5 +101,5 @@ def run(video_fname, clip_size=30, save_video_name=None):
 if __name__ == '__main__':
     video_fname = "data/IMG_4772.MOV"
     clip_size = 80  # process every 80 frames
-    save_video_name = "vid_results.mp4"
+    save_video_name = "data/vid_results.mp4"
     run(video_fname, clip_size=clip_size, save_video_name=save_video_name)
