@@ -100,5 +100,5 @@ def run(video_fname, clip_size=30, save_video_name=None):
 if __name__ == '__main__':
     video_fname = "data/IMG_4772.MOV"
     clip_size = 80  # process every 80 frames
-    save_video_name = "vid_results.avi"
+    save_video_name = "vid_results.mp4"
     run(video_fname, clip_size=clip_size, save_video_name=save_video_name)
