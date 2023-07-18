@@ -24,6 +24,26 @@ CONST_BN_SIZE = 8
 X3D_VERSION = 'M'
 
 
+def inference_net(clip, model, spatial_transforms, device):
+    video_transformed = [spatial_transforms(img) for img in clip]
+
+    video_transformed = torch.stack(video_transformed, 0).permute(1, 0, 2, 3)  # T C H W --> C T H W
+    video_transformed = video_transformed.unsqueeze(0)
+    video_transformed.to(device)
+
+    logits = model(video_transformed)
+
+    logits = logits.to("cpu")
+    logits_list = [x[0].item() for x in logits[0]]
+    logits_sm = F.softmax((torch.Tensor(logits_list)), 0)
+    prob, pred = torch.max(logits_sm, 0)
+    print(labels_to_id[pred.item()])
+    print(prob.item())
+    del video_transformed
+    del logits
+    return labels_to_id[pred.item()], prob.item()
+
+
 def run(video_fname, clip_size=30):
     if torch.cud.is_available():
         device = "cuda"
@@ -47,39 +67,19 @@ def run(video_fname, clip_size=30):
 
     vidcap = cv2.VideoCapture(video_fname)
     success, image = vidcap.read()
-    clips = []
     video = []
+    results = []
+    idx = 0
     while success:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         video.append(image)
         if len(video) % clip_size == 0:
-            clips.append(video)
+            pred_cls, prob = inference_net(video, x3d, spatial_transforms, device)
             video = []
+            results.append([idx, pred_cls, prob])
+            idx += 1
         success, image = vidcap.read()
-
-    if video:
-        clips.append(video)
-
-    results = []
-    for idx, vid in enumerate(clips):
-        video_transformed = [spatial_transforms(img) for img in vid]
-
-        video_transformed = torch.stack(video_transformed, 0).permute(1, 0, 2, 3)  # T C H W --> C T H W
-        video_transformed = video_transformed.unsqueeze(0)
-        video_transformed.to(device)
-
-        logits = x3d(video_transformed)
-
-        logits = logits.to("cpu")
-        logits_list = [x[0].item() for x in logits[0]]
-        logits_sm = F.softmax((torch.Tensor(logits_list)), 0)
-        prob, pred = torch.max(logits_sm, 0)
-        print(labels_to_id[pred.item()])
-        print(prob.item())
-        results.append([idx, labels_to_id[pred.item()], prob.item()])
-        del video_transformed
-        del logits
 
     df_res = pd.DataFrame(results, columns=['idx', 'label', 'probability'])
     df_res.to_csv("results.csv")
@@ -87,5 +87,5 @@ def run(video_fname, clip_size=30):
 
 if __name__ == '__main__':
     video_fname = ""
-    clip_size = 30  # process every 30 frames
+    clip_size = 80  # process every 80 frames
     run(video_fname, clip_size=clip_size)
