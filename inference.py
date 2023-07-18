@@ -1,6 +1,7 @@
 import torch
 import torch.nn.functional as F
 import cv2
+import numpy as np
 from PIL import Image
 
 import x3d as resnet_x3d
@@ -44,7 +45,7 @@ def inference_net(clip, model, spatial_transforms, device):
     return labels_to_id[pred.item()], prob.item()
 
 
-def run(video_fname, clip_size=30):
+def run(video_fname, clip_size=30, save_video_name=None):
     if torch.cuda.is_available():
         device = "cuda"
     else:
@@ -70,12 +71,22 @@ def run(video_fname, clip_size=30):
     video = []
     results = []
     idx = 0
+    if save_video_name:
+        out_vid = cv2.VideoWriter(save_video_name, -1, 30.0, (int(image.shape[0] / 2), int(image.shape[1] / 2)))
     while success:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         video.append(image)
         if len(video) % clip_size == 0:
             pred_cls, prob = inference_net(video, x3d, spatial_transforms, device)
+            if save_video_name:
+                for img in video:
+                    img = np.array(img)
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+                    text = f"{pred_cls} {prob * 100}%"
+                    cv2.putText(img, text, (10, 10), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
+                    out_vid.write(img)
+
             video = []
             results.append([idx, pred_cls, prob])
             idx += 1
@@ -83,9 +94,11 @@ def run(video_fname, clip_size=30):
 
     df_res = pd.DataFrame(results, columns=['idx', 'label', 'probability'])
     df_res.to_csv("results.csv")
+    out_vid.release()
 
 
 if __name__ == '__main__':
-    video_fname = ""
+    video_fname = "data/IMG_4772.MOV"
     clip_size = 80  # process every 80 frames
-    run(video_fname, clip_size=clip_size)
+    save_video_name = "vid_results.avi"
+    run(video_fname, clip_size=clip_size, save_video_name=save_video_name)
