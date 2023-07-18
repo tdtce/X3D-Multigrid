@@ -29,7 +29,7 @@ def inference_net(clip, model, spatial_transforms, device):
 
     video_transformed = torch.stack(video_transformed, 0).permute(1, 0, 2, 3)  # T C H W --> C T H W
     video_transformed = video_transformed.unsqueeze(0)
-    video_transformed.to(device)
+    video_transformed = video_transformed.to(device)
 
     logits = model(video_transformed)
 
