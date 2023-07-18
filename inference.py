@@ -72,6 +72,7 @@ def run(video_fname, clip_size=30, save_video_name=None):
     results = []
     idx = 0
     if save_video_name:
+        print(f"create video writer {save_video_name}")
         out_vid = cv2.VideoWriter(save_video_name, -1, 30.0, (int(image.shape[0] / 2), int(image.shape[1] / 2)))
     while success:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -86,7 +87,7 @@ def run(video_fname, clip_size=30, save_video_name=None):
                     text = f"{pred_cls} {prob * 100}%"
                     cv2.putText(img, text, (10, 10), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
                     out_vid.write(img)
-
+                    print("Save fragment to video")
             video = []
             results.append([idx, pred_cls, prob])
             idx += 1
