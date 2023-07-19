@@ -45,7 +45,7 @@ def inference_net(clip, model, spatial_transforms, device):
     return labels_to_id[pred.item()], prob.item()
 
 
-def run(video_fname, clip_size=30, save_video_name=None):
+def run(video_fname, clip_size=30):
     if torch.cuda.is_available():
         device = "cuda"
     else:
@@ -71,36 +71,25 @@ def run(video_fname, clip_size=30, save_video_name=None):
     video = []
     results = []
     idx = 0
-    if save_video_name:
-        print(f"create video writer {save_video_name}, wiht shape {image.shape}")
-        out_vid = cv2.VideoWriter(save_video_name, cv2.VideoWriter_fourcc(*"mp4v"), 30.0, (image.shape[1], image.shape[0]))
+
     while success:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
         video.append(image)
         if len(video) % clip_size == 0:
             pred_cls, prob = inference_net(video, x3d, spatial_transforms, device)
-            if save_video_name:
-                print("Save fragment to video")
-                for img in video[::4]:
-                    img = np.array(img)
-                    font = cv2.FONT_HERSHEY_SIMPLEX
-                    text = f"{pred_cls} {prob * 100}%"
-                    cv2.putText(img, text, (10, 10), font, 2, (0, 255, 0), 2, cv2.LINE_AA)
-#                    print(img.shape)
-                    out_vid.write(img)
             video = []
-            results.append([idx, pred_cls, prob])
+            frame_start = idx * clip_size
+            frame_end = (idx + 1) * clip_size
+            results.append([idx, frame_start, frame_end, pred_cls, prob])
             idx += 1
         success, image = vidcap.read()
 
-    df_res = pd.DataFrame(results, columns=['idx', 'label', 'probability'])
+    df_res = pd.DataFrame(results, columns=['idx', 'frame_start', 'frame_end', 'label', 'probability'])
     df_res.to_csv("results.csv")
-#    out_vid.release()
 
 
 if __name__ == '__main__':
     video_fname = "data/IMG_4772.MOV"
     clip_size = 80  # process every 80 frames
-    save_video_name = "/home/tdtce/projects/X3D-Multigrid/data/vid_results.mp4"
-    run(video_fname, clip_size=clip_size, save_video_name=save_video_name)
+    run(video_fname, clip_size=clip_size)
